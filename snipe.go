@@ -102,7 +102,6 @@ func main() {
 	}
 	for i := 0; i < len(accts); i++ {
 		go snipeSetup(accts[i], i)
-		time.Sleep(time.Millisecond * time.Duration(500))
 	}
 	go checkFailure()
 	fmt.Println("Locked and loaded. Press enter to quit.")
