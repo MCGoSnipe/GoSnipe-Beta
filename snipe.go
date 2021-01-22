@@ -101,7 +101,7 @@ func main() {
 		os.Exit(5)
 	}
 	for i := 0; i < len(accts); i++ {
-		go snipeSetup(accts[i])
+		go snipeSetup(accts[i], i)
 		time.Sleep(time.Millisecond * time.Duration(500))
 	}
 	go checkFailure()
@@ -117,7 +117,7 @@ func checkFailure() {
 		os.Exit(0)
 	}
 }
-func snipeSetup(acct string) {
+func snipeSetup(acct string, i int) {
 	time.Sleep(time.Until(timestamp.Add(time.Second * time.Duration(-35))))
 	conn, err := tls.Dial(connType, authhost+connPort, nil)
 	if err != nil {
@@ -175,8 +175,8 @@ func snipeSetup(acct string) {
 	}
 	req.Header.Set("Authorization", "Bearer "+auth["accessToken"].(string))
 	_, _ = client.Do(req)
-	for i := 0; i < 3; i++ {
-		go snipe(auth["accessToken"].(string), dataSplit[0], i)
+	for j := 0; j < 3; j++ {
+		go snipe(auth["accessToken"].(string), dataSplit[0], i * j)
 	}
 }
 
