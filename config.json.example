@@ -1,5 +1,7 @@
 {
 	"name": "abcd",
 	"delay": 0,
-	"speedCap": 0
+	"speedLimit": 0,
+	"snipeReqs": 2,
+	"useMS": false
 }

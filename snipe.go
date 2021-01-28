@@ -34,9 +34,11 @@ type AnswerRes struct {
 }
 
 type Config struct {
-	Name     string `json:"name"`
-	Delay    int    `json:"delay"`
-	SpeedCap int    `json:"speedCap"`
+	Name                string `json:"name"`
+	Delay               int    `json:"delay"`
+	SpeedCap            int    `json:"speedLimit"`
+	SnipeReqs           int    `json:"snipeReqs"`
+	UseMicrosoftAccount bool   `json:"useMS"` //unused
 }
 
 var timestamp time.Time
@@ -44,6 +46,7 @@ var name string
 var delay int
 var sniped bool
 var speedcap int
+var snipereqs int
 
 func main() {
 	sniped = false
@@ -82,6 +85,7 @@ func main() {
 	name = configuration.Name
 	delay = configuration.Delay
 	speedcap = configuration.SpeedCap
+	snipereqs = configuration.SnipeReqs
 	res, err := http.Get("https://api.nathan.cx/check/" + name)
 	if err != nil {
 		fmt.Println("failed to connect to droptime server. most likely causes are dead internet and/or the server is down.")
@@ -174,8 +178,8 @@ func snipeSetup(acct string, i int) {
 	}
 	req.Header.Set("Authorization", "Bearer "+auth["accessToken"].(string))
 	_, _ = client.Do(req)
-	for j := 0; j < 3; j++ {
-		go snipe(auth["accessToken"].(string), dataSplit[0], i * j)
+	for j := 0; j < snipereqs; j++ {
+		go snipe(auth["accessToken"].(string), dataSplit[0], i*j)
 	}
 }
 
