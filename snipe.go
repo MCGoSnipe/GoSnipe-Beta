@@ -179,31 +179,21 @@ func snipeSetup(acct string, i int) {
 	req.Header.Set("Authorization", "Bearer "+auth["accessToken"].(string))
 	_, _ = client.Do(req)
 	for j := 0; j < snipereqs; j++ {
-		go snipe(auth["accessToken"].(string), dataSplit[0], i*j)
+		ch := make(chan int)
+		go snipe(auth["accessToken"].(string), dataSplit[0], i*j, ch)
 	}
 }
-
-func snipe(bearer, email string, i int) {
-	time.Sleep(time.Until(timestamp.Add(time.Millisecond * time.Duration(0-10000-delay))))
-	conn, err := tls.Dial(connType, apiHost+connPort, nil)
-	payload := "PUT /minecraft/profile/name/" + name + " HTTP/1.1\r\nHost: api.minecraftservices.com\r\nAuthorization: Bearer " + bearer + "\r\n"
-	if err != nil {
-		fmt.Println("failed to open conn")
-		return
-	}
-	conn.Write([]byte(payload))
-	time.Sleep(time.Until(timestamp.Add(time.Millisecond * time.Duration(-delay+i*speedcap))))
-	conn.Write([]byte("\r\n"))
-	fmt.Println("Sent request at " + time.Now().Format("2006/01/02 15:04:05.0000000"))
+func getSnipeRes(ch chan int, s *tls.Conn, email string) {
 	var res []byte
 	res = make([]byte, 4096)
-	conn.Read(res)
+	var rescodei int
+	var rescodes string
+	<-ch
+	_, err := s.Read(res)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	var rescodei int
-	var rescodes string
 	rescodes = string(res[9:12])
 	rescodei, _ = strconv.Atoi(string(res[9:12]))
 	if rescodei == 200 {
@@ -212,6 +202,21 @@ func snipe(bearer, email string, i int) {
 	} else {
 		fmt.Println(rescodes + " >> Failure at time " + time.Now().Format("2006/01/02 15:04:05.0000000"))
 	}
-	conn.Close()
+	s.Close()
+}
+func snipe(bearer, email string, i int, ch chan int) {
+	time.Sleep(time.Until(timestamp.Add(time.Millisecond * time.Duration(0-10000-delay))))
+	conn, err := tls.Dial(connType, apiHost+connPort, nil)
+	payload := "PUT /minecraft/profile/name/" + name + " HTTP/1.1\r\nHost: api.minecraftservices.com\r\nAuthorization: Bearer " + bearer + "\r\n"
+	if err != nil {
+		fmt.Println("failed to open conn")
+		return
+	}
+	conn.Write([]byte(payload))
+	go getSnipeRes(ch, conn, email)
+	time.Sleep(time.Until(timestamp.Add(time.Millisecond * time.Duration(-delay+i*speedcap))))
+	conn.Write([]byte("\r\n"))
+	ch <- 0
+	fmt.Println("Sent request at " + time.Now().Format("2006/01/02 15:04:05.0000000"))
 	return
 }
