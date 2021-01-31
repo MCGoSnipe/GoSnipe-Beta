@@ -194,6 +194,7 @@ func snipe(bearer, email string, i int) {
 	conn.Write([]byte(payload))
 	time.Sleep(time.Until(timestamp.Add(time.Millisecond * time.Duration(-delay+i*speedcap))))
 	conn.Write([]byte("\r\n"))
+	fmt.Println("Sent request at " + time.Now().Format("2006/01/02 15:04:05.0000000"))
 	var res []byte
 	res = make([]byte, 4096)
 	conn.Read(res)
