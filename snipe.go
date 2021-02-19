@@ -41,12 +41,18 @@ type Config struct {
 	UseMicrosoftAccount bool   `json:"useMS"` //unused
 }
 
+type MSARes struct {
+	AccessToken *string `json:"access_token"`
+	ErrorB      *string `json:"error"`
+}
+
 var timestamp time.Time
 var name string
 var delay int
 var sniped bool
 var speedcap int
 var snipereqs int
+var useMSA bool
 
 func main() {
 	sniped = false
@@ -86,6 +92,7 @@ func main() {
 	delay = configuration.Delay
 	speedcap = configuration.SpeedCap
 	snipereqs = configuration.SnipeReqs
+	useMSA = configuration.UseMicrosoftAccount
 	res, err := http.Get("https://api.nathan.cx/check/" + name)
 	if err != nil {
 		fmt.Println("failed to connect to droptime server. most likely causes are dead internet and/or the server is down.")
@@ -107,8 +114,40 @@ func main() {
 	for i := 0; i < len(accts); i++ {
 		go snipeSetup(accts[i], i)
 	}
+	if useMSA {
+		fmt.Println("Head over to https://login.live.com/oauth20_authorize.srf\n" +
+			"?client_id=9abe16f4-930f-4033-b593-6e934115122f&response_type=code&\n" +
+			"redirect_uri=https%3A%2F%2Fmicroauth.tk%2Ftoken&scope=XboxLive.signin%20XboxLive.offline_access\n" +
+			"(one link) and paste the repsonse here.\nAlso, make sure the snipe wait won't last more than a day.")
+		scanner := bufio.NewReader(os.Stdin)
+		fmt.Println("Paste response and press ENTER:")
+		msaText, _ := scanner.ReadString('\n')
+		var msaJSON MSARes
+		json.Unmarshal([]byte(msaText), &msaJSON)
+		if msaJSON.ErrorB == nil {
+			for i := 0; i < snipereqs; i++ {
+				ch := make(chan int)
+				go msaSnipe(*msaJSON.AccessToken, i, ch)
+			}
+		} else {
+			fmt.Println("MSA account authorization had an error occur.")
+		}
+	}
 	go checkFailure()
-	fmt.Println("Locked and loaded. Press enter to quit.")
+	fmt.Println("Exit codes and reasons: ")
+	fmt.Println("0 - Sniped name")
+	fmt.Println("1 - Failed to snipe name")
+	fmt.Println("2 - Accounts.txt load failure")
+	fmt.Println("3 - Config.json load failure")
+	fmt.Println("4 - Parsing error")
+	fmt.Println("5 - Failed to connect to droptime server (nathan.cx)")
+	fmt.Println("6 - Failed to parse droptime")
+	fmt.Printf("Dropping at: %v\n", timestamp)
+	fmt.Printf("snipeReqs used: %v\n", snipereqs)
+	fmt.Printf("Delay used: %v ms\n", delay)
+	fmt.Printf("Going for: %v\n", name)
+	fmt.Printf("MSA account loaded: %v\n", useMSA)
+	fmt.Println("Locked and loaded. Press ENTER to stop the snipe.")
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 	os.Exit(127) //user terminated
 }
@@ -190,6 +229,7 @@ func getSnipeRes(ch chan int, s *tls.Conn, email string) {
 	var rescodes string
 	<-ch
 	_, err := s.Read(res)
+	timestampa := time.Now().Format("2006/01/02 15:04:05.0000000")
 	if err != nil {
 		fmt.Println(err)
 		return
@@ -197,12 +237,28 @@ func getSnipeRes(ch chan int, s *tls.Conn, email string) {
 	rescodes = string(res[9:12])
 	rescodei, _ = strconv.Atoi(string(res[9:12]))
 	if rescodei == 200 {
-		fmt.Println("200 >> Sniped " + name + " on email " + email + " at " + time.Now().Format("2006/01/02 15:04:05.0000000"))
+		fmt.Println("200 >> Sniped " + name + " on email " + email + " at " + timestampa)
 		sniped = true
 	} else {
-		fmt.Println(rescodes + " >> Failure at time " + time.Now().Format("2006/01/02 15:04:05.0000000"))
+		fmt.Println(rescodes + " >> Failure at time " + timestampa)
 	}
 	s.Close()
+}
+func msaSnipe(bearer string, i int, ch chan int) {
+	time.Sleep(time.Until(timestamp.Add(time.Millisecond * time.Duration(0-10000-delay))))
+	conn, err := tls.Dial(connType, apiHost+connPort, nil)
+	payload := "PUT /minecraft/profile/name/" + name + " HTTP/1.1\r\nHost: api.minecraftservices.com\r\nAuthorization: Bearer " + bearer + "\r\n"
+	if err != nil {
+		fmt.Println("failed to open conn")
+		return
+	}
+	conn.Write([]byte(payload))
+	go getSnipeRes(ch, conn, "MSA")
+	time.Sleep(time.Until(timestamp.Add(time.Millisecond * time.Duration(-delay+i*speedcap)).Add(time.Nanosecond * time.Duration(200000))))
+	conn.Write([]byte("\r\n"))
+	ch <- 0
+	fmt.Println("Sent request at " + time.Now().Format("2006/01/02 15:04:05.0000000"))
+	return
 }
 func snipe(bearer, email string, i int, ch chan int) {
 	time.Sleep(time.Until(timestamp.Add(time.Millisecond * time.Duration(0-10000-delay))))
