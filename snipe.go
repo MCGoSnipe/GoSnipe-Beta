@@ -270,7 +270,7 @@ func snipe(bearer, email string, i int, ch chan int) {
 	}
 	conn.Write([]byte(payload))
 	go getSnipeRes(ch, conn, email)
-	time.Sleep(time.Until(timestamp.Add(time.Millisecond * time.Duration(-delay+i*speedcap)).Add(time.Nanosecond * time.Duration(200000))))
+	time.Sleep(time.Until(timestamp.Add(time.Millisecond * time.Duration(-delay+i*speedcap))))
 	conn.Write([]byte("\r\n"))
 	ch <- 0
 	fmt.Println("Sent request at " + time.Now().Format("2006/01/02 15:04:05.0000000"))
