@@ -125,7 +125,7 @@ func main() {
 				"redirect_uri=https%3A%2F%2Fmicroauth.tk%2Ftoken&scope=XboxLive.signin%20XboxLive.offline_access\n" +
 				"(one link) and paste the repsonse here.\nAlso, make sure the snipe wait won't last more than a day.")
 		} else {
-			fmt.Println("NOTE: Use a new browser session per account, this way your accounts won't be reused.\n" +
+			fmt.Println("NOTE: Use a new browser session (close and open) per account, this way your accounts won't be reused.\n" +
 				"Also, make sure the snipe wait won't last more than a day.\nHead over to https://login.live.com/oauth20_authorize.srf\n" +
 				"?client_id=9abe16f4-930f-4033-b593-6e934115122f&response_type=code&\n" +
 				"redirect_uri=https%3A%2F%2Fmicroauth.tk%2Ftoken&scope=XboxLive.signin%20XboxLive.offline_access\n" +
