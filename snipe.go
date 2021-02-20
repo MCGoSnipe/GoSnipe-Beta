@@ -175,7 +175,7 @@ func checkFailure() {
 	}
 }
 func snipeSetup(acct string, i int) {
-	time.Sleep(time.Until(timestamp.Add(time.Second * time.Duration(-35))))
+	time.Sleep(time.Until(timestamp.Add(time.Second * time.Duration(-25))))
 	conn, err := tls.Dial(connType, authhost+connPort, nil)
 	if err != nil {
 		fmt.Println("failed to connect to auth server.\nif you see this error once per account, your internet is dead.")
