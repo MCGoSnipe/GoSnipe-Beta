@@ -34,11 +34,12 @@ type AnswerRes struct {
 }
 
 type Config struct {
-	Name                string `json:"name"`
-	Delay               int    `json:"delay"`
-	SpeedCap            int    `json:"speedLimit"`
-	SnipeReqs           int    `json:"snipeReqs"`
-	UseMicrosoftAccount bool   `json:"useMS"` //unused
+	Name                  string `json:"name"`
+	Delay                 int    `json:"delay"`
+	SpeedCap              int    `json:"speedLimit"`
+	SnipeReqs             int    `json:"snipeReqs"`
+	UseMicrosoftAccount   bool   `json:"useMS"`
+	MicrosoftAccountCount int    `json:"msCount"`
 }
 
 type MSARes struct {
@@ -53,6 +54,7 @@ var sniped bool
 var speedcap int
 var snipereqs int
 var useMSA bool
+var msaCount int
 
 func main() {
 	sniped = false
@@ -93,6 +95,7 @@ func main() {
 	speedcap = configuration.SpeedCap
 	snipereqs = configuration.SnipeReqs
 	useMSA = configuration.UseMicrosoftAccount
+	msaCount = configuration.MicrosoftAccountCount
 	res, err := http.Get("https://api.nathan.cx/check/" + name)
 	if err != nil {
 		fmt.Println("failed to connect to droptime server. most likely causes are dead internet and/or the server is down.")
@@ -115,22 +118,34 @@ func main() {
 		go snipeSetup(accts[i], i)
 	}
 	if useMSA {
-		fmt.Println("Head over to https://login.live.com/oauth20_authorize.srf\n" +
-			"?client_id=9abe16f4-930f-4033-b593-6e934115122f&response_type=code&\n" +
-			"redirect_uri=https%3A%2F%2Fmicroauth.tk%2Ftoken&scope=XboxLive.signin%20XboxLive.offline_access\n" +
-			"(one link) and paste the repsonse here.\nAlso, make sure the snipe wait won't last more than a day.")
-		scanner := bufio.NewReader(os.Stdin)
-		fmt.Println("Paste response and press ENTER:")
-		msaText, _ := scanner.ReadString('\n')
-		var msaJSON MSARes
-		json.Unmarshal([]byte(msaText), &msaJSON)
-		if msaJSON.ErrorB == nil {
-			for i := 0; i < snipereqs; i++ {
-				ch := make(chan int)
-				go msaSnipe(*msaJSON.AccessToken, i, ch)
-			}
+		if (msaCount) == 1 {
+			fmt.Println("NOTICE: Make sure the snipe wait won't last more than a day.\n" +
+				"Head over to https://login.live.com/oauth20_authorize.srf\n" +
+				"?client_id=9abe16f4-930f-4033-b593-6e934115122f&response_type=code&\n" +
+				"redirect_uri=https%3A%2F%2Fmicroauth.tk%2Ftoken&scope=XboxLive.signin%20XboxLive.offline_access\n" +
+				"(one link) and paste the repsonse here.\nAlso, make sure the snipe wait won't last more than a day.")
 		} else {
-			fmt.Println("MSA account authorization had an error occur.")
+			fmt.Println("NOTE: Use a new browser session per account, this way your accounts won't be reused.\n" +
+				"Also, make sure the snipe wait won't last more than a day.\nHead over to https://login.live.com/oauth20_authorize.srf\n" +
+				"?client_id=9abe16f4-930f-4033-b593-6e934115122f&response_type=code&\n" +
+				"redirect_uri=https%3A%2F%2Fmicroauth.tk%2Ftoken&scope=XboxLive.signin%20XboxLive.offline_access\n" +
+				"(one link) and paste the repsonse here.")
+		}
+		for j := 0; j < msaCount; j++ {
+
+			scanner := bufio.NewReader(os.Stdin)
+			fmt.Println("Paste response and press ENTER:")
+			msaText, _ := scanner.ReadString('\n')
+			var msaJSON MSARes
+			json.Unmarshal([]byte(msaText), &msaJSON)
+			if msaJSON.ErrorB == nil {
+				for i := 0; i < snipereqs; i++ {
+					ch := make(chan int)
+					go msaSnipe(*msaJSON.AccessToken, i, ch)
+				}
+			} else {
+				fmt.Println("MSA account authorization had an error occur.")
+			}
 		}
 	}
 	go checkFailure()

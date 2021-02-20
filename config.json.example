@@ -3,5 +3,6 @@
 	"delay": 0,
 	"speedLimit": 0,
 	"snipeReqs": 2,
-	"useMS": false
+	"useMS": false,
+	"msCount": 1
 }
