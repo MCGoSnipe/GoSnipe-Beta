@@ -1,6 +1,7 @@
 # GoSnipe
 GoSnipe go nyoooooooooom!
 
+[Join our Discord!](https://discord.gg/rqfQgYjHsv)
 ## What is this?
 GoSnipe is a Minecraft name sniper.
 
