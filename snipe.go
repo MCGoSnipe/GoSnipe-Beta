@@ -34,12 +34,13 @@ type AnswerRes struct {
 }
 
 type Config struct {
-	Name                  string `json:"name"`
-	Delay                 int    `json:"delay"`
-	SpeedCap              int    `json:"speedLimit"`
-	SnipeReqs             int    `json:"snipeReqs"`
-	UseMicrosoftAccount   bool   `json:"useMS"`
-	MicrosoftAccountCount int    `json:"msCount"`
+	Name                  string  `json:"name"`
+	Delay                 float64 `json:"delay"`
+	SpeedCap              int     `json:"speedLimit"`
+	SnipeReqs             int     `json:"snipeReqs"`
+	UseMicrosoftAccount   bool    `json:"useMS"`
+	MicrosoftAccountCount int     `json:"msCount"`
+	AutoDelay             bool    `json:"autoDelay"`
 }
 
 type MSARes struct {
@@ -49,7 +50,7 @@ type MSARes struct {
 
 var timestamp time.Time
 var name string
-var delay int
+var delay float64
 var sniped bool
 var speedcap int
 var snipereqs int
@@ -92,6 +93,24 @@ func main() {
 	json.Unmarshal(data, &configuration)
 	name = configuration.Name
 	delay = configuration.Delay
+	if configuration.AutoDelay {
+		conn, err := tls.Dial(connType, apiHost+connPort, nil)
+		payload := "PUT /minecraft/profile/name/" + name + " HTTP/1.1\r\nHost: api.minecraftservices.com\r\nAuthorization: Bearer token" + "\r\n"
+		if err != nil {
+			fmt.Println("failed to open connection for auto delay")
+			return
+		}
+		poop := make([]byte, 4096)
+		time1 := time.Now()
+		conn.Write([]byte(payload))
+		conn.Write([]byte("\r\n"))
+		conn.Read(poop)
+		duration := time.Now().Sub(time1)
+		conn.Close()
+		delay = float64(duration.Nanoseconds()) / 1000000.0
+
+		fmt.Printf("Using delay %v\n", delay)
+	}
 	speedcap = configuration.SpeedCap
 	snipereqs = configuration.SnipeReqs
 	useMSA = configuration.UseMicrosoftAccount
@@ -157,6 +176,7 @@ func main() {
 	fmt.Println("4 - Parsing error")
 	fmt.Println("5 - Failed to connect to droptime server (nathan.cx)")
 	fmt.Println("6 - Failed to parse droptime")
+	fmt.Println("7 - Failed to auto-delay")
 	fmt.Printf("Dropping at: %v\n", timestamp)
 	fmt.Printf("snipeReqs used: %v\n", snipereqs)
 	fmt.Printf("Delay used: %v ms\n", delay)
@@ -260,7 +280,7 @@ func getSnipeRes(ch chan int, s *tls.Conn, email string) {
 	s.Close()
 }
 func msaSnipe(bearer string, i int, ch chan int) {
-	time.Sleep(time.Until(timestamp.Add(time.Millisecond * time.Duration(0-10000-delay))))
+	time.Sleep(time.Until(timestamp.Add(time.Millisecond * time.Duration(0-10000)).Add(time.Duration(-delay) * time.Millisecond)))
 	conn, err := tls.Dial(connType, apiHost+connPort, nil)
 	payload := "PUT /minecraft/profile/name/" + name + " HTTP/1.1\r\nHost: api.minecraftservices.com\r\nAuthorization: Bearer " + bearer + "\r\n"
 	if err != nil {
@@ -269,14 +289,14 @@ func msaSnipe(bearer string, i int, ch chan int) {
 	}
 	conn.Write([]byte(payload))
 	go getSnipeRes(ch, conn, "MSA")
-	time.Sleep(time.Until(timestamp.Add(time.Millisecond * time.Duration(-delay+i*speedcap)).Add(time.Nanosecond * time.Duration(200000))))
+	time.Sleep(time.Until(timestamp.Add(time.Millisecond * time.Duration(i*speedcap)).Add(time.Millisecond * time.Duration(-delay))))
 	conn.Write([]byte("\r\n"))
 	ch <- 0
 	fmt.Println("Sent request at " + time.Now().Format("2006/01/02 15:04:05.0000000"))
 	return
 }
 func snipe(bearer, email string, i int, ch chan int) {
-	time.Sleep(time.Until(timestamp.Add(time.Millisecond * time.Duration(0-10000-delay))))
+	time.Sleep(time.Until(timestamp.Add(time.Millisecond * time.Duration(0-10000)).Add(time.Duration(-delay) * time.Millisecond)))
 	conn, err := tls.Dial(connType, apiHost+connPort, nil)
 	payload := "PUT /minecraft/profile/name/" + name + " HTTP/1.1\r\nHost: api.minecraftservices.com\r\nAuthorization: Bearer " + bearer + "\r\n"
 	if err != nil {
@@ -285,7 +305,7 @@ func snipe(bearer, email string, i int, ch chan int) {
 	}
 	conn.Write([]byte(payload))
 	go getSnipeRes(ch, conn, email)
-	time.Sleep(time.Until(timestamp.Add(time.Millisecond * time.Duration(-delay+i*speedcap))))
+	time.Sleep(time.Until(timestamp.Add(time.Millisecond * time.Duration(i*speedcap)).Add(time.Millisecond * time.Duration(-delay))))
 	conn.Write([]byte("\r\n"))
 	ch <- 0
 	fmt.Println("Sent request at " + time.Now().Format("2006/01/02 15:04:05.0000000"))

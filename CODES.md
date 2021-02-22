@@ -6,5 +6,5 @@
  - `4`: `Parsing error (newline format does not match platform?)`
  - `5`: `Failed to connect to droptime server (nathan.cx)`
  - `6`: `Failed to parse droptime`
-
+ - `7`: `Failed to auto-delay`
  - `127`: `User exit`

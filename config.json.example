@@ -1,6 +1,7 @@
 {
 	"name": "abcd",
 	"delay": 0,
+	"autoDelay": true,
 	"speedLimit": 0,
 	"snipeReqs": 2,
 	"useMS": false,
